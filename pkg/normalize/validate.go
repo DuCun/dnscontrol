@@ -16,6 +16,8 @@ import (
 	dnsutilv1 "github.com/miekg/dns/dnsutil"
 )
 
+type capabilityChecker func(string, providers.Capability) bool
+
 // Returns false if target does not validate.
 func checkIPv4(label string) error {
 	if addr, err := netip.ParseAddr(label); err != nil || !addr.Is4() {
@@ -634,11 +636,40 @@ func checkAutoDNSSEC(dc *models.DomainConfig) (errs []error) {
 	return
 }
 
+func providerAllowsMultipleCNAMEsWithCapability(dc *models.DomainConfig, hasCapability capabilityChecker) bool {
+	if len(dc.DNSProviderInstances) != 0 {
+		for _, provider := range dc.DNSProviderInstances {
+			if provider.ProviderType == "-" {
+				return false
+			}
+			if !hasCapability(provider.ProviderType, providers.CanUseScopedMultipleCNAMEs) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if len(dc.DNSProviderNames) == 0 {
+		return false
+	}
+	for providerName := range dc.DNSProviderNames {
+		if !hasCapability(providerName, providers.CanUseScopedMultipleCNAMEs) {
+			return false
+		}
+	}
+	return true
+}
+
 func checkCNAMEs(dc *models.DomainConfig) (errs []error) {
+	return checkCNAMEsWithCapability(dc, providers.ProviderHasCapability)
+}
+
+func checkCNAMEsWithCapability(dc *models.DomainConfig, hasCapability capabilityChecker) (errs []error) {
 	cnames := map[string]bool{}
+	allowMultipleCNAMEs := providerAllowsMultipleCNAMEsWithCapability(dc, hasCapability)
 	for _, r := range dc.Records {
 		if r.Type == "CNAME" {
-			if cnames[r.GetLabel()] {
+			if cnames[r.GetLabel()] && !allowMultipleCNAMEs {
 				errs = append(errs, fmt.Errorf("%s: cannot have multiple CNAMEs with same name: %s", r.FilePos, r.GetLabelFQDN()))
 			}
 			cnames[r.GetLabel()] = true

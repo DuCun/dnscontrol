@@ -22,27 +22,28 @@ func _() {
 	_ = x[CanUseDSForChildren-11]
 	_ = x[CanUseHTTPS-12]
 	_ = x[CanUseLOC-13]
-	_ = x[CanUseNAPTR-14]
-	_ = x[CanUsePTR-15]
-	_ = x[CanUseRoute53Alias-16]
-	_ = x[CanUseRP-17]
-	_ = x[CanUseSMIMEA-18]
-	_ = x[CanUseSOA-19]
-	_ = x[CanUseSRV-20]
-	_ = x[CanUseSSHFP-21]
-	_ = x[CanUseSVCB-22]
-	_ = x[CanUseTLSA-23]
-	_ = x[CanUseDNSKEY-24]
-	_ = x[CanUseOPENPGPKEY-25]
-	_ = x[DocCreateDomains-26]
-	_ = x[DocDualHost-27]
-	_ = x[DocOfficiallySupported-28]
-	_ = x[CanUseAKAMAITLC-29]
+	_ = x[CanUseScopedMultipleCNAMEs-14]
+	_ = x[CanUseNAPTR-15]
+	_ = x[CanUsePTR-16]
+	_ = x[CanUseRoute53Alias-17]
+	_ = x[CanUseRP-18]
+	_ = x[CanUseSMIMEA-19]
+	_ = x[CanUseSOA-20]
+	_ = x[CanUseSRV-21]
+	_ = x[CanUseSSHFP-22]
+	_ = x[CanUseSVCB-23]
+	_ = x[CanUseTLSA-24]
+	_ = x[CanUseDNSKEY-25]
+	_ = x[CanUseOPENPGPKEY-26]
+	_ = x[DocCreateDomains-27]
+	_ = x[DocDualHost-28]
+	_ = x[DocOfficiallySupported-29]
+	_ = x[CanUseAKAMAITLC-30]
 }
 
-const _Capability_name = "CanAutoDNSSECCanConcurCanGetZonesCanOnlyDiff1FeaturesCanUseAKAMAICDNCanUseAliasCanUseAzureAliasCanUseCAACanUseDHCIDCanUseDNAMECanUseDSCanUseDSForChildrenCanUseHTTPSCanUseLOCCanUseNAPTRCanUsePTRCanUseRoute53AliasCanUseRPCanUseSMIMEACanUseSOACanUseSRVCanUseSSHFPCanUseSVCBCanUseTLSACanUseDNSKEYCanUseOPENPGPKEYDocCreateDomainsDocDualHostDocOfficiallySupportedCanUseAKAMAITLC"
+const _Capability_name = "CanAutoDNSSECCanConcurCanGetZonesCanOnlyDiff1FeaturesCanUseAKAMAICDNCanUseAliasCanUseAzureAliasCanUseCAACanUseDHCIDCanUseDNAMECanUseDSCanUseDSForChildrenCanUseHTTPSCanUseLOCCanUseScopedMultipleCNAMEsCanUseNAPTRCanUsePTRCanUseRoute53AliasCanUseRPCanUseSMIMEACanUseSOACanUseSRVCanUseSSHFPCanUseSVCBCanUseTLSACanUseDNSKEYCanUseOPENPGPKEYDocCreateDomainsDocDualHostDocOfficiallySupportedCanUseAKAMAITLC"
 
-var _Capability_index = [...]uint16{0, 13, 22, 33, 53, 68, 79, 95, 104, 115, 126, 134, 153, 164, 173, 184, 193, 211, 219, 231, 240, 249, 260, 270, 280, 292, 308, 324, 335, 357, 372}
+var _Capability_index = [...]uint16{0, 13, 22, 33, 53, 68, 79, 95, 104, 115, 126, 134, 153, 164, 173, 199, 210, 219, 237, 245, 257, 266, 275, 286, 296, 306, 318, 334, 350, 361, 383, 398}
 
 func (i Capability) String() string {
 	idx := int(i) - 0
