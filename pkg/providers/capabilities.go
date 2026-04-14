@@ -70,6 +70,11 @@ const (
 	// CanUseLOC indicates whether service provider handles LOC records.
 	CanUseLOC
 
+	// CanUseScopedMultipleCNAMEs indicates the provider can manage multiple
+	// CNAME recordsets at the same label when they are separated by
+	// provider-specific routing metadata.
+	CanUseScopedMultipleCNAMEs
+
 	// CanUseNAPTR indicates the provider can handle NAPTR records.
 	CanUseNAPTR
 

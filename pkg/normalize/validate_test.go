@@ -342,6 +342,80 @@ func TestCNAMEMutex(t *testing.T) {
 	}
 }
 
+func TestCNAMEMutexProviderCapabilities(t *testing.T) {
+	hasCapability := func(providerName string, capability providers.Capability) bool {
+		return capability == providers.CanUseScopedMultipleCNAMEs && providerName == "MULTI_CNAME_PROVIDER"
+	}
+
+	recCNAMEA := &models.RecordConfig{Type: "CNAME"}
+	recCNAMEA.SetLabel("foo", "example.com")
+	recCNAMEA.MustSetTarget("a.example.net.")
+
+	recCNAMEB := &models.RecordConfig{Type: "CNAME"}
+	recCNAMEB.SetLabel("foo", "example.com")
+	recCNAMEB.MustSetTarget("b.example.net.")
+
+	recA := &models.RecordConfig{Type: "A"}
+	recA.SetLabel("foo", "example.com")
+	recA.MustSetTarget("1.2.3.4")
+
+	tests := []struct {
+		name              string
+		providers         map[string]int
+		providerInstances []*models.DNSProviderInstance
+		records           []*models.RecordConfig
+		wantErrs          int
+	}{
+		{
+			name:      "provider without capability rejects multiple cname",
+			providers: map[string]int{"DEFAULT_PROVIDER": 1},
+			records:   []*models.RecordConfig{recCNAMEA, recCNAMEB},
+			wantErrs:  1,
+		},
+		{
+			name:      "provider with capability allows multiple cname",
+			providers: map[string]int{"MULTI_CNAME_PROVIDER": 1},
+			records:   []*models.RecordConfig{recCNAMEA, recCNAMEB},
+			wantErrs:  0,
+		},
+		{
+			name:      "mixed providers require every provider to support capability",
+			providers: map[string]int{"MULTI_CNAME_PROVIDER": 1, "DEFAULT_PROVIDER": 1},
+			records:   []*models.RecordConfig{recCNAMEA, recCNAMEB},
+			wantErrs:  1,
+		},
+		{
+			name:      "capability does not allow mixing cname with other types",
+			providers: map[string]int{"MULTI_CNAME_PROVIDER": 1},
+			records:   []*models.RecordConfig{recCNAMEA, recA},
+			wantErrs:  1,
+		},
+		{
+			name:      "provider type is used instead of provider alias",
+			providers: map[string]int{"huaweicloud": 1},
+			providerInstances: []*models.DNSProviderInstance{
+				{ProviderBase: models.ProviderBase{Name: "huaweicloud", ProviderType: "MULTI_CNAME_PROVIDER"}},
+			},
+			records:  []*models.RecordConfig{recCNAMEA, recCNAMEB},
+			wantErrs: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dc := &models.DomainConfig{
+				Name:                 "example.com",
+				DNSProviderNames:     tt.providers,
+				DNSProviderInstances: tt.providerInstances,
+				Records:              tt.records,
+			}
+			if errs := checkCNAMEsWithCapability(dc, hasCapability); len(errs) != tt.wantErrs {
+				t.Fatalf("checkCNAMEs() returned %d errors, want %d: %v", len(errs), tt.wantErrs, errs)
+			}
+		})
+	}
+}
+
 func TestCAAValidation(t *testing.T) {
 	config := &models.DNSConfig{
 		Domains: []*models.DomainConfig{
