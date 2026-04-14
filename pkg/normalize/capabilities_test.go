@@ -18,6 +18,7 @@ func TestCapabilitiesAreFiltered(t *testing.T) {
 	// Any capabilities which we wish to whitelist because it's not directly
 	// something we can test against.
 	skipCheckCapabilities := make(map[string]struct{})
+	skipCheckCapabilities["CanUseScopedMultipleCNAMEs"] = struct{}{}
 	// skipCheckCapabilities["CanUseBlahBlahBlah"] = struct{}{}
 
 	fset := token.NewFileSet()
