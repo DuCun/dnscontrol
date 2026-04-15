@@ -1,0 +1,112 @@
+name: "ALPHA: Multi-platform binaries"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-alpha
+  cancel-in-progress: true
+
+jobs:
+  release_latest_binaries:
+    name: release alpha binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      # Keep tag history so snapshot versions are derived from the latest release tag.
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      # Stringer is needed because .goreleaser.latest.yml runs "go generate ./..." in before.hooks.
+      - name: Install stringer
+        run: |
+          go install golang.org/x/tools/cmd/stringer@latest
+
+      - name: Build snapshot binaries for all platforms
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: latest
+          args: build --snapshot --clean --config .goreleaser.latest.yml
+
+      - name: Package alpha release assets
+        run: |
+          rm -rf release-assets
+          mkdir -p release-assets
+
+          tar -C dist/dnscontrol_linux_amd64_v1 -czf release-assets/dnscontrol_linux_amd64.tar.gz dnscontrol
+          tar -C dist/dnscontrol_linux_arm64_v8.0 -czf release-assets/dnscontrol_linux_arm64.tar.gz dnscontrol
+          zip -j release-assets/dnscontrol_windows_amd64.zip dist/dnscontrol_windows_amd64_v1/dnscontrol.exe
+          zip -j release-assets/dnscontrol_windows_arm64.zip dist/dnscontrol_windows_arm64_v8.0/dnscontrol.exe
+          tar -C dist/dnscontrol_darwin_all -czf release-assets/dnscontrol_darwin_universal.tar.gz dnscontrol
+          tar -C dist/dnscontrol_freebsd_amd64_v1 -czf release-assets/dnscontrol_freebsd_amd64.tar.gz dnscontrol
+          tar -C dist/dnscontrol_freebsd_arm64_v8.0 -czf release-assets/dnscontrol_freebsd_arm64.tar.gz dnscontrol
+
+          (
+            cd release-assets
+            sha256sum \
+              dnscontrol_linux_amd64.tar.gz \
+              dnscontrol_linux_arm64.tar.gz \
+              dnscontrol_windows_amd64.zip \
+              dnscontrol_windows_arm64.zip \
+              dnscontrol_darwin_universal.tar.gz \
+              dnscontrol_freebsd_amd64.tar.gz \
+              dnscontrol_freebsd_arm64.tar.gz \
+              > checksums.txt
+          )
+
+      - name: Generate alpha release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LAST_RELEASE_TAG="$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq 'map(select(.draft == false and .prerelease == false)) | .[0].tag_name // empty' 2>/dev/null || true)"
+          BASE_TAG="${LAST_RELEASE_TAG}"
+          if [ -z "${BASE_TAG}" ]; then
+            BASE_TAG="$(git tag --sort=-v:refname | head -n 1)"
+          fi
+          {
+            echo "Automated alpha multi-platform binary build from main."
+            echo
+            echo "Commit: ${GITHUB_SHA}"
+            echo
+            if [ -n "${LAST_RELEASE_TAG}" ]; then
+              echo "Changes since latest published release (${LAST_RELEASE_TAG}):"
+              git log --no-merges --pretty=format:'- %h %s' "${LAST_RELEASE_TAG}..${GITHUB_SHA}" || true
+            elif [ -n "${BASE_TAG}" ]; then
+              echo "No published release found. Changes since latest tag (${BASE_TAG}):"
+              git log --no-merges --pretty=format:'- %h %s' "${BASE_TAG}..${GITHUB_SHA}" || true
+            else
+              echo "No published release or tag found."
+              echo
+              echo "Recent commits:"
+              git log --no-merges -n 20 --pretty=format:'- %h %s'
+            fi
+          } > /tmp/alpha-notes.md
+
+      - name: Delete previous alpha release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view alpha >/dev/null 2>&1 && gh release delete alpha --yes --cleanup-tag || true
+
+      - name: Publish alpha binaries release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create alpha release-assets/* \
+            --target "${GITHUB_SHA}" \
+            --title "Alpha binaries" \
+            --notes-file /tmp/alpha-notes.md \
+            --prerelease

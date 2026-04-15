@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+project_name: dnscontrol
+version: 2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+      - freebsd
+    ignore:
+      - goos: linux
+        goarch: "386"
+      - goos: windows
+        goarch: "386"
+      - goos: freebsd
+        goarch: "386"
+    ldflags:
+      - -linkmode=internal -s -w
+      - -X github.com/StackExchange/dnscontrol/v4/pkg/version.version={{ .Version }}
+
+before:
+  hooks:
+    - go fmt ./...
+    - go mod tidy
+    - go generate ./...
+
+universal_binaries:
+  - replace: true
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-main-{{ .ShortCommit }}"
